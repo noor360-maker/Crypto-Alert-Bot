@@ -59,6 +59,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Stop httpx from logging full request URLs (they contain the bot token)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
 bot = Bot(token=TELEGRAM_TOKEN)
 exchange = ccxt.binance({"enableRateLimit": True})
 
@@ -126,6 +130,24 @@ async def send_alert(symbol, signal_type, candle):
     except TelegramError as e:
         logger.error(f"Telegram error: {e}")
 
+async def log_known_chats():
+    """If sending fails, log the chat IDs that have messaged this bot."""
+    try:
+        updates = await bot.get_updates(limit=50)
+        seen = {}
+        for u in updates:
+            msg = u.message or u.edited_message or u.channel_post
+            if msg:
+                chat = msg.chat
+                seen[chat.id] = chat.first_name or chat.title or chat.username or ""
+        if seen:
+            for cid, name in seen.items():
+                logger.info(f"CHAT ID FOUND: {cid} ({name}) -> put this number in CHAT_ID")
+        else:
+            logger.info("No messages found for this bot. Send any message to the bot in Telegram, then redeploy.")
+    except Exception as e:
+        logger.error(f"Could not read chat IDs: {e}")
+
 async def main_loop():
     logger.info(f"Bot started. Monitoring {len(SYMBOLS)} pairs | EMA 9/21 + Volume filter")
 
@@ -139,6 +161,7 @@ async def main_loop():
         logger.info("Startup message sent to Telegram")
     except TelegramError as e:
         logger.error(f"Telegram startup message failed: {e}")
+        await log_known_chats()
 
     while True:
         for symbol in SYMBOLS:
