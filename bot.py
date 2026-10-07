@@ -129,6 +129,17 @@ async def send_alert(symbol, signal_type, candle):
 async def main_loop():
     logger.info(f"Bot started. Monitoring {len(SYMBOLS)} pairs | EMA 9/21 + Volume filter")
 
+    # One-time startup message to confirm Telegram delivery works
+    try:
+        await bot.send_message(
+            chat_id=CHAT_ID,
+            text=f"✅ <b>Crypto Alert Bot started</b>\nMonitoring {len(SYMBOLS)} pairs • 15m • EMA 9/21 + Volume filter",
+            parse_mode="HTML",
+        )
+        logger.info("Startup message sent to Telegram")
+    except TelegramError as e:
+        logger.error(f"Telegram startup message failed: {e}")
+
     while True:
         for symbol in SYMBOLS:
             try:
