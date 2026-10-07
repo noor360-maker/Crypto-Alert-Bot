@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import logging
 from datetime import datetime, timezone
@@ -50,9 +51,11 @@ MIN_BARS_BETWEEN_SIGNALS = 4
 CHECK_INTERVAL = 50
 # ============================================
 
+# Send logs to stdout so Railway shows INFO as normal logs (not "error")
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    stream=sys.stdout,
 )
 logger = logging.getLogger(__name__)
 
